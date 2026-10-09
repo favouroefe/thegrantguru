@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { GraduationCap, Home, LayoutDashboard, User, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ApplyPrompt } from "./ApplyPrompt";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
@@ -32,6 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/profile" className={nav} activeProps={active}><User className="h-5 w-5" />Profile</Link>
         </div>
       </nav>
+      <ApplyPrompt />
     </div>
   );
 }
