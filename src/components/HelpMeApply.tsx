@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarPlus, ExternalLink, Bookmark, BookmarkCheck } from "lucide-react";
+import { CalendarPlus, ExternalLink, Bookmark } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -73,4 +73,3 @@ export function HelpMeApply({ fund, trigger }: { fund: Fund; trigger: ReactNode 
   );
 }
 
-export { BookmarkCheck };

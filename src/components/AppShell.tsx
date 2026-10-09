@@ -20,7 +20,7 @@ function NotificationBell() {
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
         {NOTIFICATIONS.map((n) => (
           <DropdownMenuItem key={n.id} asChild className="rounded-xl">
-            <Link to={n.to as "/results"} {...(n.id === 1 ? { to: "/grant/$id" as const, params: { id: "bursary-1916" } } : {})} className="flex items-start gap-3 py-2">
+            <Link to={n.to as "/results"} {...(n.id === 1 ? { to: "/grant/$id" as const, params: { id: "bursary-1916-t1" } } : {})} className="flex items-start gap-3 py-2">
               <span className="text-lg">{n.icon}</span>
               <span><span className="block text-sm font-medium">{n.title}</span><span className="text-xs text-muted-foreground">{n.time}</span></span>
             </Link>
@@ -73,5 +73,5 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 export function Disclaimer() {
-  return <p className="mt-10 rounded-2xl bg-muted p-4 text-center text-xs text-muted-foreground">Results are estimates. Always confirm eligibility on the official site.</p>;
+  return <p className="mt-10 rounded-2xl bg-muted p-4 text-center text-xs text-muted-foreground">Estimates only. Always check official eligibility on the provider's website.</p>;
 }

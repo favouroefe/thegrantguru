@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { grantsQuery, upsertUserGrant } from "@/lib/data";
+import { fundsQuery, upsertUserGrant } from "@/lib/data";
 import { toast } from "sonner";
 
 export function ApplyPrompt() {
   const [grantId, setGrantId] = useState<string | null>(null);
-  const { data: grants } = useQuery(grantsQuery);
+  const { data: grants } = useQuery(fundsQuery);
   const qc = useQueryClient();
   useEffect(() => {
     const check = () => {
