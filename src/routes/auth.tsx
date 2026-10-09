@@ -37,7 +37,7 @@ function AuthPage() {
       ? await supabase.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: window.location.origin } })
       : await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     navigate({ to: "/home" });
   }
 

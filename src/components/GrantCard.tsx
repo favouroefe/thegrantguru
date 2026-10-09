@@ -22,7 +22,7 @@ export function markApplyClicked(grantId: string) {
   sessionStorage.setItem("gg_pending_apply", grantId);
 }
 
-export function GrantCard({ grant, reason, ug }: { grant: Grant; reason?: string; ug?: UserGrant }) {
+export function GrantCard({ grant, reason, ug }: { grant: Grant; reason?: string | undefined; ug?: UserGrant | undefined }) {
   const qc = useQueryClient();
   async function toggleSave() {
     try {

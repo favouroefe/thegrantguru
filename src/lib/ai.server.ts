@@ -3,7 +3,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 const RUN_ID = "X-Lovable-AIG-Run-ID";
 
 export function createGateway() {
-  const apiKey = process.env.LOVABLE_API_KEY;
+  const apiKey = process.env['LOVABLE_API_KEY'];
   if (!apiKey) throw new Error("AI is not configured (missing LOVABLE_API_KEY).");
   let runId: string | undefined;
   const fetchWithRunId = async (input: RequestInfo | URL, init?: RequestInit) => {

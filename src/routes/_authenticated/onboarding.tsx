@@ -21,7 +21,7 @@ const STEPS = ["About you", "Residency & status", "Money & household", "Your sit
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return <div className="space-y-1.5"><Label className="text-sm font-semibold">{label}</Label>{children}</div>;
 }
-function Select({ value, onChange, options, placeholder = "Choose…" }: { value?: string; onChange: (v: string) => void; options: string[]; placeholder?: string }) {
+function Select({ value, onChange, options, placeholder = "Choose…" }: { value?: string | undefined; onChange: (v: string) => void; options: string[]; placeholder?: string }) {
   return (
     <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base">
       <option value="" disabled>{placeholder}</option>
@@ -29,7 +29,7 @@ function Select({ value, onChange, options, placeholder = "Choose…" }: { value
     </select>
   );
 }
-function Pills({ value, onChange, options }: { value?: string; onChange: (v: string) => void; options: string[] }) {
+function Pills({ value, onChange, options }: { value?: string | undefined; onChange: (v: string) => void; options: string[] }) {
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => (
