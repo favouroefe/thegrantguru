@@ -4,6 +4,7 @@ import { Pencil, RefreshCw, Bell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { profileQuery } from "@/lib/data";
+import { IDENTITIES, INCOME, TALENTS } from "@/lib/options";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({ meta: [{ title: "Your profile — GrantGuru" }, { name: "description", content: "Edit your answers and re-run grant matching." }, { property: "og:title", content: "Your profile — GrantGuru" }, { property: "og:description", content: "Edit your answers." }] }),
@@ -14,9 +15,10 @@ function ProfilePage() {
   const { data } = useQuery(profileQuery);
   const a = data?.answers;
   const rows: [string, unknown][] = a ? [
-    ["College", a.college], ["Course", a.course], ["Year", a.year], ["Study", a.study], ["Level", a.level], ["Fee status", a.fee_status],
-    ["County", a.county], ["Distance to college", a.distance_km && `${a.distance_km} km`], ["Household income", a.income_band],
-    ["Social welfare", a.social_welfare], ["Situation", (a.situation ?? []).join(", ")],
+    ["Status", IDENTITIES.find((i) => i.value === a.identity)?.label], ["Nationality", a.nationality],
+    ["College", a.college], ["Course", a.course], ["Year", a.year === "postgrad" ? "Postgrad" : a.year && `Year ${a.year}`], ["Study", a.study],
+    ["County", a.county], ["30km+ from college", a.distance_30], ["Household income", INCOME.find((i) => i.value === a.income)?.label],
+    ["Talents", (a.talents ?? []).map((t) => TALENTS.find((x) => x.value === t)?.label ?? t).join(", ")],
   ] : [];
   return (
     <AppShell>
