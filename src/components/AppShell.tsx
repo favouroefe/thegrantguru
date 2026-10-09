@@ -9,7 +9,7 @@ import { ApplyPrompt } from "./ApplyPrompt";
 import { ChatWidget } from "./ChatWidget";
 
 function NotificationBell() {
-  const [unread, setUnread] = useState(NOTIFICATIONS.length);
+  const [unread, setUnread] = useState<number>(NOTIFICATIONS.length);
   return (
     <DropdownMenu onOpenChange={(o) => o && setUnread(0)}>
       <DropdownMenuTrigger aria-label="Notifications" className="relative grid h-9 w-9 place-items-center rounded-full hover:bg-secondary">
@@ -20,7 +20,7 @@ function NotificationBell() {
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
         {NOTIFICATIONS.map((n) => (
           <DropdownMenuItem key={n.id} asChild className="rounded-xl">
-            <Link to={n.to} className="flex items-start gap-3 py-2">
+            <Link to={n.to as "/results"} {...(n.id === 1 ? { to: "/grant/$id" as const, params: { id: "bursary-1916" } } : {})} className="flex items-start gap-3 py-2">
               <span className="text-lg">{n.icon}</span>
               <span><span className="block text-sm font-medium">{n.title}</span><span className="text-xs text-muted-foreground">{n.time}</span></span>
             </Link>
