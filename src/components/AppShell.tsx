@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { GraduationCap, Home, LayoutDashboard, User, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ApplyPrompt } from "./ApplyPrompt";
+import { ChatWidget } from "./ChatWidget";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
       <ApplyPrompt />
+      <ChatWidget />
     </div>
   );
 }
