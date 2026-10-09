@@ -87,7 +87,7 @@ export interface Answers {
   notes?: string | undefined;
 }
 /** Part 5 — kept in this browser session only, never saved to the database. */
-export interface Situation { items: string[]; gender?: string | undefined; gender_self?: string | undefined; pnts?: boolean | undefined }
+export interface Situation { items: string[]; gender?: string | undefined; gender_self?: string | undefined; pnts?: boolean | undefined; none?: string[] | undefined }
 
 const SKEY = "gg_situation";
 export function loadSituation(): Situation {

@@ -217,7 +217,7 @@ function Onboarding() {
 
   const part = review ? 6 : q.part;
   const progress = review ? 100 : ((idx + 1) / (visible.length + 1)) * 100;
-  const sensitive = !review && (q.part === 2 || q.part === 4);
+  const sensitive = !review && q.part === 2;
 
   return (
     <div className="min-h-screen bg-background">
@@ -254,7 +254,7 @@ function Onboarding() {
               <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">{q.title}</h1>
             </div>
             {q.sub && <p className="mt-2 text-muted-foreground">{q.sub}</p>}
-            <div className="mt-2"><WhyWeAsk text={q.why} /></div>
+            {q.why && <div className="mt-2"><WhyWeAsk text={q.why} /></div>}
             {sensitive && <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary p-3 text-sm text-secondary-foreground"><Lock className="h-4 w-4" /> Only used to match grants. Never shared.</p>}
             <div className="mt-6">{q.render({ a, set, s, setS })}</div>
           </div>
@@ -264,7 +264,7 @@ function Onboarding() {
           <div className="sticky bottom-0 mt-8 bg-background pb-2 pt-3">
             <Button onClick={go} disabled={!ok} className="h-14 w-full rounded-2xl text-base">Continue <ArrowRight className="h-4 w-4" /></Button>
             {!ok && <p className="mt-2 text-center text-sm text-muted-foreground">{q.id === "talents" ? "Pick at least one (or “None of these”) to continue" : "Pick an option to continue"}</p>}
-            {(q.part >= 4 || q.optional) && <button onClick={() => { setDir(1); if (idx >= visible.length - 1) setReview(true); else setIdx(idx + 1); }} className="mt-3 w-full text-center text-sm font-semibold text-primary underline">Skip</button>}
+            {(q.part >= 4 || q.optional) && <button onClick={() => { setDir(1); const to = q.id === "situation_intro" ? visible.findIndex((x) => x.part > 4) : idx + 1; if (to < 0 || to >= visible.length) setReview(true); else setIdx(to); }} className="mt-3 w-full text-center text-sm font-semibold text-primary underline">{q.id === "situation_intro" ? "Skip this section" : "Skip"}</button>}
           </div>
         )}
       </div>
