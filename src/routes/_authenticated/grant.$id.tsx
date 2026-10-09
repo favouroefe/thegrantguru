@@ -6,6 +6,8 @@ import { AppShell, Disclaimer } from "@/components/AppShell";
 import { DeadlineBadge, markApplyClicked } from "@/components/GrantCard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { DraftApplication } from "@/components/DraftApplication";
 import { grantsQuery, matchesQuery } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/grant/$id")({
@@ -38,14 +40,16 @@ function GrantDetail() {
         </ul>
       </section>
       <section className="mt-4 rounded-3xl bg-card p-5 shadow-card">
-        <h2 className="font-bold">Documents you'll need</h2>
+        <div className="flex items-center justify-between"><h2 className="font-bold">Documents you'll need</h2><span className="text-sm font-semibold text-primary">Ready to apply: {g.documents_needed.filter((d) => checked[d]).length}/{g.documents_needed.length}</span></div>
+        <Progress value={(g.documents_needed.filter((d) => checked[d]).length / Math.max(1, g.documents_needed.length)) * 100} className="mt-3 h-2" />
         <ul className="mt-3 space-y-3">
           {g.documents_needed.map((d) => (
             <li key={d}><label className="flex items-center gap-3 text-sm"><Checkbox checked={!!checked[d]} onCheckedChange={(c) => setChecked((p) => ({ ...p, [d]: !!c }))} /><span className={checked[d] ? "line-through text-muted-foreground" : ""}>{d}</span></label></li>
           ))}
         </ul>
       </section>
-      <Button asChild className="mt-6 h-14 w-full rounded-2xl text-base">
+      <DraftApplication grantName={g.name} />
+      <Button asChild className="mt-3 h-14 w-full rounded-2xl text-base">
         <a href={g.apply_url} target="_blank" rel="noreferrer" onClick={() => markApplyClicked(g.id)}>Apply on official site <ExternalLink className="h-4 w-4" /></a>
       </Button>
       <Disclaimer />

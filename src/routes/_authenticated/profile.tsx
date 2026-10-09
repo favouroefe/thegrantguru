@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Pencil, RefreshCw } from "lucide-react";
+import { Pencil, RefreshCw, Bell } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { profileQuery } from "@/lib/data";
@@ -27,6 +27,7 @@ function ProfilePage() {
         </dl>
       ) : <p className="mt-4 text-muted-foreground">You haven't filled in your details yet.</p>}
       <div className="mt-6 grid gap-3">
+        <Button asChild variant="outline" className="h-12 rounded-2xl"><Link to="/settings/notifications"><Bell className="h-4 w-4" /> Notification settings</Link></Button>
         <Button asChild variant="outline" className="h-12 rounded-2xl"><Link to="/onboarding"><Pencil className="h-4 w-4" /> Edit answers</Link></Button>
         {a && <Button asChild className="h-12 rounded-2xl"><Link to="/results" search={{ scan: true }}><RefreshCw className="h-4 w-4" /> Re-run matching</Link></Button>}
       </div>

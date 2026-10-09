@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink, CheckCircle2, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { daysUntil } from "@/lib/options";
 import { upsertUserGrant, type Grant, type UserGrant } from "@/lib/data";
@@ -47,6 +47,7 @@ export function GrantCard({ grant, reason, ug }: { grant: Grant; reason?: string
       </div>
       {reason && <p className="mt-3 text-sm text-foreground/80">{reason}</p>}
       <div className="mt-4 flex gap-2">
+        <Button variant="outline" size="icon" aria-label="Add to my calendar" className="shrink-0 rounded-xl" onClick={() => toast.success("Added to your calendar 📅")}><CalendarPlus className="h-4 w-4" /></Button>
         <Button variant="outline" className="flex-1 rounded-xl" onClick={toggleSave}>
           {ug?.saved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}{ug?.saved ? "Saved" : "Save"}
         </Button>

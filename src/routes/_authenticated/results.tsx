@@ -7,6 +7,7 @@ import { Check, ChevronDown, Globe, Loader2, School, ExternalLink, AlertTriangle
 import { AppShell, Disclaimer } from "@/components/AppShell";
 import { GrantCard } from "@/components/GrantCard";
 import { WhatIf } from "@/components/WhatIf";
+import { ShareResults } from "@/components/ShareResults";
 import { profileQuery } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -120,6 +121,7 @@ function ResultsPage() {
         <p className="text-primary-foreground/80">You could be eligible for up to</p>
         <p className="mt-1 font-display text-5xl font-extrabold text-accent"><Counter value={total} /></p>
         <p className="mt-2 text-sm text-primary-foreground/70">across {likely.length} likely scheme{likely.length === 1 ? "" : "s"} · per year where applicable</p>
+        <ShareResults total={total} />
       </div>
 
       {profile?.answers && grants.length > 0 && <WhatIf grants={grants} answers={profile.answers} />}
