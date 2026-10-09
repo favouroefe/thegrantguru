@@ -1,5 +1,13 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791556075390,
+      "tag": "0000_grantguru_schema",
+      "breakpoints": true
+    }
+  ]
 }

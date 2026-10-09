@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      grants: {
+        Row: {
+          amount_max_eur: number
+          amount_text: string
+          apply_url: string
+          audience_tags: string[]
+          criteria: Json
+          deadline: string | null
+          description: string
+          documents_needed: string[]
+          id: string
+          name: string
+          provider: string
+          type: string
+        }
+        Insert: {
+          amount_max_eur?: number
+          amount_text: string
+          apply_url: string
+          audience_tags?: string[]
+          criteria?: Json
+          deadline?: string | null
+          description?: string
+          documents_needed?: string[]
+          id: string
+          name: string
+          provider: string
+          type: string
+        }
+        Update: {
+          amount_max_eur?: number
+          amount_text?: string
+          apply_url?: string
+          audience_tags?: string[]
+          criteria?: Json
+          deadline?: string | null
+          description?: string
+          documents_needed?: string[]
+          id?: string
+          name?: string
+          provider?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          created_at: string
+          results: Json
+          user_id: string
+          web_results: Json | null
+        }
+        Insert: {
+          created_at?: string
+          results?: Json
+          user_id: string
+          web_results?: Json | null
+        }
+        Update: {
+          created_at?: string
+          results?: Json
+          user_id?: string
+          web_results?: Json | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          answers: Json | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json | null
+          id: string
+          name?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_grants: {
+        Row: {
+          grant_id: string
+          saved: boolean
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          grant_id: string
+          saved?: boolean
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          grant_id?: string
+          saved?: boolean
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_grants_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "grants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
