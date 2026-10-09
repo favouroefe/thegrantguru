@@ -15,7 +15,7 @@ export const askGuru = createServerFn({ method: "POST" })
     const { createGateway, MODEL, reasoningOptions, friendlyAiError } = await import("./ai.server");
     const [{ data: profile }, { data: grants }] = await Promise.all([
       supabase.from("profiles").select("answers").eq("id", userId).single(),
-      supabase.from("grants").select("id, name, provider, type, amount_text, deadline, description, criteria, apply_url, documents_needed"),
+      supabase.from("funds").select("id, name, provider, category, amount_text, amount_varies, deadline, description, open_to_tags, requires_tags, requires_any_tags, colleges, apply_url, how_to_apply_steps, documents_needed"),
     ]);
     const gateway = createGateway();
     try {

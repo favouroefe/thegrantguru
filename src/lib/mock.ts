@@ -1,5 +1,5 @@
 export const NOTIFICATIONS = [
-  { id: 1, icon: "⏰", title: "1916 Bursary closes today", time: "2h ago", to: "/grant/bursary-1916" },
+  { id: 1, icon: "⏰", title: "1916 Bursary closes today", time: "2h ago", to: "/grant/bursary-1916-t1" },
   { id: 2, icon: "💸", title: "New match: DCU Access Scholarship", time: "Yesterday", to: "/results" },
   { id: 3, icon: "📬", title: "Your weekly digest is ready", time: "2 days ago", to: "/weekly" },
   { id: 4, icon: "✅", title: "SUSI Maintenance Grant marked Awarded", time: "Last week", to: "/dashboard" },

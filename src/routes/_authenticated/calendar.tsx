@@ -6,7 +6,8 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DeadlineBadge, markApplyClicked } from "@/components/GrantCard";
-import { grantsQuery, matchesQuery, userGrantsQuery, type Grant } from "@/lib/data";
+import { userGrantsQuery, type Fund as Grant } from "@/lib/data";
+import { useMatches } from "@/hooks/use-matches";
 import { daysUntil } from "@/lib/options";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -25,14 +26,13 @@ function chipClass(g: Grant, applied: boolean) {
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 function CalendarPage() {
-  const { data: grants = [] } = useQuery(grantsQuery);
-  const { data: matches } = useQuery(matchesQuery);
+  const { funds: grants, matches } = useMatches();
   const { data: ugs = [] } = useQuery(userGrantsQuery);
   const [month, setMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
   const [view, setView] = useState<"month" | "list">("month");
   const [day, setDay] = useState<string | null>(null);
 
-  const relevant = new Set([...(matches?.results ?? []).filter((r) => r.status !== "not eligible").map((r) => r.grant_id), ...ugs.map((u) => u.grant_id)]);
+  const relevant = new Set([...matches.map((m) => m.fund.id), ...ugs.map((u) => u.grant_id)]);
   const dated = grants.filter((g) => g.deadline && (relevant.size === 0 || relevant.has(g.id))).sort((a, b) => a.deadline!.localeCompare(b.deadline!));
   const applied = new Set(ugs.filter((u) => u.status).map((u) => u.grant_id));
   const byDay = new Map<string, Grant[]>();

@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Send, X, BookOpen } from "lucide-react";
 import { askGuru } from "@/lib/chat.functions";
-import { grantsQuery } from "@/lib/data";
+import { fundsQuery } from "@/lib/data";
 
 const SUGGESTIONS: { q: string; a: string; sources: string[] }[] = [
-  { q: "Can I get SUSI if I repeated a year?", a: "Usually SUSI won't fund a repeat year of the same course level, but there are exceptions (e.g. illness or other serious circumstances). I'm not certain – check with SUSI or your college access office.", sources: ["susi-maintenance"] },
-  { q: "I'm an international student, what can I apply for?", a: "Most SUSI and Free Fees schemes need EU fee status, but you can look at university international merit scholarships, your college's hardship fund, and Universities of Sanctuary scholarships if you have protection or leave to remain.", sources: ["intl-merit", "college-hardship", "sanctuary"] },
+  { q: "Can I get SUSI if I repeated a year?", a: "Usually SUSI won't fund a repeat year of the same course level, but there are exceptions (e.g. illness or other serious circumstances). I'm not certain – check with SUSI or your college access office.", sources: ["susi-maint-standard"] },
+  { q: "I'm an international student, what can I apply for?", a: "Most state grants like SUSI aren't open to international students. But you can look at international merit scholarships at each university, your college's hardship fund, and sports or arts scholarships. Your college's international office is a great place to ask.", sources: ["intl-merit", "college-hardship"] },
   { q: "What's the Student Assistance Fund for?", a: "The Student Assistance Fund helps students in financial difficulty with costs like rent, food, travel, books and childcare. You apply through your college access office and they assess your need.", sources: ["saf"] },
 ];
 
@@ -20,7 +20,7 @@ export function ChatWidget() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const ask = useServerFn(askGuru);
-  const { data: grants = [] } = useQuery(grantsQuery);
+  const { data: grants = [] } = useQuery(fundsQuery);
   const end = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);

@@ -8,6 +8,13 @@
       "when": 1791556075390,
       "tag": "0000_grantguru_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791559017523,
+      "tag": "0001_funds_table",
+      "breakpoints": true
     }
   ]
 }
