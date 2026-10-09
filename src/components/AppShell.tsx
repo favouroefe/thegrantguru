@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NOTIFICATIONS } from "@/lib/mock";
 import { ApplyPrompt } from "./ApplyPrompt";
-import { ChatWidget } from "./ChatWidget";
 
 function NotificationBell() {
   const [unread, setUnread] = useState<number>(NOTIFICATIONS.length);
@@ -67,7 +66,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
       <ApplyPrompt />
-      <ChatWidget />
     </div>
   );
 }
