@@ -33,8 +33,8 @@ function CalendarPage() {
   const [view, setView] = useState<"month" | "list">("month");
   const [day, setDay] = useState<string | null>(null);
 
-  const relevant = new Set([...matches.map((m) => m.fund.id), ...ugs.map((u) => u.grant_id)]);
-  const dated = grants.filter((g) => g.deadline && (relevant.size === 0 || relevant.has(g.id))).sort((a, b) => a.deadline!.localeCompare(b.deadline!));
+  void matches;
+  const dated = grants.filter((g) => g.deadline).sort((a, b) => a.deadline!.localeCompare(b.deadline!));
   const applied = new Set(ugs.filter((u) => u.status).map((u) => u.grant_id));
   const byDay = new Map<string, Grant[]>();
   dated.forEach((g) => byDay.set(g.deadline!, [...(byDay.get(g.deadline!) ?? []), g]));
