@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, RefreshCw, Search, LayoutDashboard } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ChatCard } from "@/components/ChatCard";
 import { profileQuery } from "@/lib/data";
 
 export const Route = createFileRoute("/_authenticated/home")({
@@ -25,6 +26,7 @@ function HomePage() {
         <p className="mt-2 text-primary-foreground/80">{hasProfile ? "Changed course, address or circumstances? Update and check again." : "A few quick questions, one at a time. We save as you go."}</p>
         <span className="mt-6 inline-flex items-center gap-2 font-semibold text-accent">Start <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
       </Link>
+      <ChatCard />
       {hasProfile && (
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link to="/results" className="rounded-3xl bg-card p-5 shadow-card"><p className="text-sm text-muted-foreground">Last scan</p><p className="mt-1 font-bold">See my results</p></Link>

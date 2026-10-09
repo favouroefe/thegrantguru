@@ -44,6 +44,14 @@ function CalendarPage() {
   const cells = [...Array(first).fill(null), ...Array.from({ length: daysIn }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1))];
   const today = iso(new Date());
   const dayGrants = day ? byDay.get(day) ?? [] : [];
+  const upcoming = dated.filter((g) => (daysUntil(g.deadline) ?? -1) >= 0);
+
+  const exportRow = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm text-muted-foreground">Add every deadline to your own calendar.</p>
+      <AddToCalendar funds={upcoming} label="Add all deadlines" />
+    </div>
+  );
 
   const Chip = ({ g }: { g: Grant }) => (
     <span className={`block truncate rounded-md px-1 py-0.5 text-[9px] font-semibold leading-tight ${chipClass(g, applied.has(g.id))}`}>{applied.has(g.id) && "✓ "}{g.name}</span>
@@ -53,12 +61,9 @@ function CalendarPage() {
     <AppShell>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-3xl font-extrabold">Calendar</h1>
-        <div className="flex items-center gap-2">
-          <AddToCalendar funds={dated.filter((g) => (daysUntil(g.deadline) ?? -1) >= 0)} label="Add all deadlines" />
-          <div className="flex rounded-xl bg-muted p-1">
-            <button onClick={() => setView("month")} aria-label="Month view" className={`rounded-lg p-2 ${view === "month" ? "bg-card shadow-card" : ""}`}><CalendarDays className="h-4 w-4" /></button>
-            <button onClick={() => setView("list")} aria-label="List view" className={`rounded-lg p-2 ${view === "list" ? "bg-card shadow-card" : ""}`}><List className="h-4 w-4" /></button>
-          </div>
+        <div className="flex rounded-xl bg-muted p-1">
+          <button onClick={() => setView("month")} aria-label="Month view" className={`rounded-lg p-2 ${view === "month" ? "bg-card shadow-card" : ""}`}><CalendarDays className="h-4 w-4" /></button>
+          <button onClick={() => setView("list")} aria-label="List view" className={`rounded-lg p-2 ${view === "list" ? "bg-card shadow-card" : ""}`}><List className="h-4 w-4" /></button>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -85,6 +90,7 @@ function CalendarPage() {
               );
             })}
           </div>
+          <div className="mt-4 border-t pt-4">{exportRow}</div>
         </div>
       ) : (
         <div className="mt-5 space-y-3">
@@ -97,6 +103,7 @@ function CalendarPage() {
               <div className="min-w-0"><p className="font-bold">{applied.has(g.id) && "✓ "}{g.name}</p><p className="text-sm text-muted-foreground">{g.amount_text}</p></div>
             </button>
           ))}
+          <div className="rounded-3xl bg-card p-4 shadow-card">{exportRow}</div>
         </div>
       )}
 
