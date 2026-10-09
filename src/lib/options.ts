@@ -98,7 +98,8 @@ export function storeSituation(s: Situation) { sessionStorage.setItem(SKEY, JSON
 
 export function daysUntil(date: string | null) {
   if (!date) return null;
-  const d = new Date(date + "T23:59:59");
-  return Math.ceil((d.getTime() - Date.now()) / 86400000);
+  const d = new Date(date + "T00:00:00");
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d.getTime() - t.getTime()) / 86400000);
 }
 export const euro = (n: number) => "€" + Math.round(n).toLocaleString("en-IE");
