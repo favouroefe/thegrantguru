@@ -3,7 +3,7 @@
 export interface ChatAction { label: string; to: "/onboarding" | "/calendar" }
 export interface Reply { content: string; action?: ChatAction }
 
-const SCAN: ChatAction = { label: "Start my scan", to: "/onboarding" };
+export const START_SCAN: ChatAction = { label: "Start my scan", to: "/onboarding" };
 const CALENDAR: ChatAction = { label: "Open calendar", to: "/calendar" };
 
 export const SAMPLE_QUESTIONS = [
@@ -37,13 +37,13 @@ const RULES: { keys: string[]; reply: Reply }[] = [
   },
   {
     keys: ["scan", "eligible", "qualify"],
-    reply: { content: "Do the scan and I'll match you with grants and scholarships in about 3 minutes.", action: SCAN },
+    reply: { content: "Do the scan and I'll match you with grants and scholarships in about 3 minutes.", action: START_SCAN },
   },
 ];
 
 export const FALLBACK: Reply = {
   content: "Good question! I'm still learning. For now, try the scan or check the official provider's site.",
-  action: SCAN,
+  action: START_SCAN,
 };
 
 /** Whole-word, case-insensitive keyword match (so "safe" never matches "saf"). */

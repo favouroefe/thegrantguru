@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Send } from "lucide-react";
 import { useMatches } from "@/hooks/use-matches";
-import { FALLBACK, SAMPLE_QUESTIONS, scriptAnswer, type ChatAction } from "@/lib/chat-script";
+import { SAMPLE_QUESTIONS, START_SCAN, scriptAnswer, type ChatAction } from "@/lib/chat-script";
 
 const TYPING_MS = 800;
 
@@ -20,7 +20,7 @@ export function ChatCard() {
 
   const greeting: Msg = answers
     ? { role: "assistant", content: total > 0 ? `Welcome back ${first}! You may qualify for up to €${total.toLocaleString("en-IE")}. Ask me anything about your grants.` : `Welcome back ${first}! Ask me anything about your grants.` }
-    : { role: "assistant", content: `Hey ${first}! 👋 I'm GrantGuru. The fastest way to find your funding is the 3-minute scan.`, action: FALLBACK.action };
+    : { role: "assistant", content: `Hey ${first}! 👋 I'm GrantGuru. The fastest way to find your funding is the 3-minute scan.`, action: START_SCAN };
 
   useEffect(() => {
     if (loading || greeted.current) return;
