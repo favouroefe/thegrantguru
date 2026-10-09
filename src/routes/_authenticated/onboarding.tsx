@@ -11,7 +11,7 @@ import { Autocomplete, CheckCard, OptionCards, WhyWeAsk, yesNo } from "@/compone
 import { profileQuery, saveAnswers } from "@/lib/data";
 import {
   COLLEGES, COUNTIES, COUNTRIES, COURSES, IDENTITIES, INCOME, SITUATIONS, TALENTS,
-  isStemCourse, loadSituation, pathFor, storeSituation, suggestIdentity, type Answers, type Situation,
+  isStemCourse, loadSituation, pathFor, storeSituation, type Answers, type Situation,
 } from "@/lib/options";
 import { toast } from "sonner";
 
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
   component: Onboarding,
 });
 
-const PARTS = ["Where you're from", "Your studies", "Home & money", "Talents & interests", "Your situation", "Anything else?"];
+const PARTS = ["About you", "Your studies", "Home & money", "Talents & interests", "Your situation", "Anything else?"];
 
 interface Q {
   id: string; part: number; title: string; sub?: string; why: string; optional?: boolean;
@@ -39,24 +39,37 @@ const STUDY = [{ value: "full-time", label: "Full-time" }, { value: "part-time",
 const LEVELS = [{ value: "club", label: "Club" }, { value: "county", label: "County" }, { value: "national", label: "National" }, { value: "international", label: "International" }];
 const GENDERS = [{ value: "woman", label: "Woman" }, { value: "man", label: "Man" }, { value: "non-binary", label: "Non-binary" }, { value: "self", label: "Self-describe" }, { value: "pnts", label: "Prefer not to say" }];
 
+/** A Part 5 multi-select screen. Answers live in session state only. */
+function sitQ(id: string, title: string, keys: string[]): Q {
+  const opts = SITUATIONS.filter((o) => keys.includes(o.value));
+  return {
+    id, part: 4, optional: true, title, sub: "Select all that apply.", why: "",
+    valid: () => true,
+    summary: (_a, s) => opts.filter((o) => s.items.includes(o.value)).map((o) => o.label).join(", ") || "—",
+    render: ({ s, setS }) => {
+      const none = !!s.none?.includes(id);
+      const toggle = (v: string) => setS({ ...s, none: (s.none ?? []).filter((x) => x !== id), items: s.items.includes(v) ? s.items.filter((x) => x !== v) : [...s.items, v] });
+      return (
+        <div className="space-y-3">
+          {opts.map((o) => <CheckCard key={o.value} on={s.items.includes(o.value)} onClick={() => toggle(o.value)} label={o.label} help={"help" in o ? o.help : undefined} />)}
+          <CheckCard on={none} onClick={() => setS({ ...s, items: s.items.filter((x) => !keys.includes(x)), none: none ? (s.none ?? []).filter((x) => x !== id) : [...(s.none ?? []), id] })} label="None of these" />
+        </div>
+      );
+    },
+  };
+}
+
 const QUESTIONS: Q[] = [
+  { id: "gender", part: 0, title: "How do you describe your gender?", why: "Some scholarships are set up for particular groups, like women in STEM. We only use this to add funds — never to hide any.",
+    valid: (_a, s) => has(s.gender) && (s.gender !== "self" || has(s.gender_self?.trim())),
+    summary: (_a, s) => s.gender === "self" ? s.gender_self || "Self-describe" : lbl(GENDERS, s.gender),
+    render: ({ s, setS }) => (<>
+      <OptionCards options={GENDERS} value={s.gender} onChange={(v) => setS({ ...s, gender: v })} />
+      {s.gender === "self" && <Input autoFocus value={s.gender_self ?? ""} onChange={(e) => setS({ ...s, gender_self: e.target.value })} placeholder="How do you describe yourself?" className="mt-3 h-12 rounded-xl" />}
+    </>) },
   { id: "identity", part: 0, title: "Which of these describes you best?", why: "Most state grants depend on your citizenship or residency status. This tells us which funds you can apply for.",
     valid: (a) => has(a.identity), summary: (a) => lbl(IDENTITIES, a.identity),
     render: ({ a, set }) => <OptionCards options={IDENTITIES} value={a.identity} onChange={(v) => set({ identity: v })} /> },
-  { id: "nationality", part: 0, title: "What's your nationality?", sub: "Start typing and pick from the list.", why: "Some scholarships are only for certain countries. It also helps us double-check the last answer.",
-    valid: (a) => has(a.nationality), summary: (a) => a.nationality ?? "—",
-    render: ({ a, set }) => {
-      const sug = suggestIdentity(a.identity, a.nationality);
-      return (<>
-        <Autocomplete options={COUNTRIES} value={a.nationality} onChange={(v) => set({ nationality: v })} placeholder="e.g. Ireland" />
-        {sug && (
-          <div className="mt-4 rounded-2xl bg-secondary p-4 text-sm">
-            Just checking — {a.nationality} usually means <b>{lbl(IDENTITIES, sug)}</b>.
-            <button type="button" onClick={() => set({ identity: sug })} className="ml-1 font-semibold text-primary underline">Switch to that</button>
-          </div>
-        )}
-      </>);
-    } },
   { id: "residency", part: 0, title: "Have you lived in Ireland, the UK or the EU/EEA for at least 3 of the last 5 years?", why: "SUSI and free fees usually need 3 years of living here (or in the UK/EU) before your course starts.",
     show: pathA, valid: (a) => has(a.residency), summary: (a) => lbl(yesNo(true), a.residency),
     render: ({ a, set }) => <OptionCards options={yesNo(true)} value={a.residency} onChange={(v) => set({ residency: v })} /> },
@@ -102,7 +115,7 @@ const QUESTIONS: Q[] = [
     valid: (a) => has(a.works), summary: (a) => lbl(yesNo(), a.works),
     render: ({ a, set }) => <OptionCards options={yesNo()} value={a.works} onChange={(v) => set({ works: v })} /> },
 
-  { id: "talents", part: 3, title: "What are you into?", sub: "Select all that apply.", why: "Lots of scholarships reward sport, results, creativity or community work — not just money worries.",
+  { id: "talents", part: 3, title: "Do you have any sporting or academic achievements?", sub: "Select all that apply. These help us find scholarships for you.", why: "Lots of scholarships reward sport, results, creativity or community work — not just money worries.",
     valid: (a) => (a.talents?.length ?? 0) > 0 && (!a.talents?.includes("sport") || (has(a.sport_name) && has(a.sport_level))),
     summary: (a) => (a.talents ?? []).map((t) => lbl(TALENTS, t)).join(", ") + (a.talents?.includes("sport") ? ` (${a.sport_name}, ${a.sport_level})` : ""),
     render: ({ a, set }) => {
@@ -125,24 +138,13 @@ const QUESTIONS: Q[] = [
       </>);
     } },
 
-  { id: "situation", part: 4, optional: true, title: "Your situation", sub: "These are optional and only used to find extra funding for you. Nothing here is stored.",
-    why: "Some funds are set aside for carers, parents, care-experienced students and others. We keep these answers on this device only, until you close the tab.",
-    valid: () => true, summary: (_a, s) => s.pnts ? "Prefer not to say" : [...s.items.map((i) => SITUATIONS.find((x) => x.value === i)?.label ?? i), ...(s.gender ? [lbl(GENDERS, s.gender)] : [])].join(", ") || "—",
-    render: ({ s, setS }) => {
-      const toggle = (v: string) => setS({ ...s, pnts: false, items: s.items.includes(v) ? s.items.filter((x) => x !== v) : [...s.items, v] });
-      return (
-        <div className="space-y-3">
-          <p className="font-bold">Select all that apply.</p>
-          {SITUATIONS.map((o) => <CheckCard key={o.value} on={s.items.includes(o.value)} onClick={() => toggle(o.value)} label={o.label} help={"help" in o ? o.help : undefined} />)}
-          <div className="rounded-2xl border-2 border-border bg-card p-4">
-            <p className="font-medium">Gender</p>
-            <div className="mt-3 flex flex-wrap gap-2">{GENDERS.map((g) => <button key={g.value} type="button" onClick={() => setS({ ...s, pnts: false, gender: g.value })} className={`rounded-full border-2 px-4 py-2 text-sm ${s.gender === g.value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>{g.label}</button>)}</div>
-            {s.gender === "self" && <Input value={s.gender_self ?? ""} onChange={(e) => setS({ ...s, gender_self: e.target.value })} placeholder="How do you describe yourself?" className="mt-3 h-12 rounded-xl" />}
-          </div>
-          <CheckCard on={!!s.pnts} onClick={() => setS(s.pnts ? { items: [] } : { items: [], pnts: true })} label="Prefer not to say" />
-        </div>
-      );
-    } },
+  { id: "situation_intro", part: 4, optional: true, title: "A few optional questions", why: "",
+    valid: () => true, summary: () => "",
+    render: () => <p className="flex items-center gap-2 rounded-2xl bg-secondary p-4 text-secondary-foreground"><Lock className="h-5 w-5 shrink-0" /> These help us find extra funding. They're optional and never stored.</p> },
+  sitQ("sit_family", "Family & caring", ["carer", "lone_parent"]),
+  sitQ("sit_health", "Health & learning", ["disability", "neurodivergent"]),
+  sitQ("sit_background", "Your background", ["care_experienced", "traveller_roma", "first_in_family"]),
+  sitQ("sit_money", "Money & route to college", ["welfare", "fe_entrant"]),
 
   { id: "notes", part: 5, optional: true, title: "Tell us anything else in your own words (optional).", why: "Sometimes there's something the questions missed. It helps when you ask GrantGuru for advice later.",
     valid: () => true, summary: (a) => a.notes || "—",
