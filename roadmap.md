@@ -1,8 +1,7 @@
 # Roadmap
-- [x] Ask GrantGuru chat (floating button, chips, sources, fallback)
-- [x] What-if slider on results
-- [x] Calendar tab (month/list, chips, day sheet, "Add to my calendar")
-- [x] Notifications bell + settings page + email preview
-- [x] GrantGuru Weekly newsletter page
-- [x] Share card, Draft my application modal, document checklist progress
-- [x] Landing page social proof (€1.2M counter + wins ticker)
+- [x] Earlier features (chat, what-if, calendar, notifications, weekly, extras, landing proof)
+- [ ] New funds table + seed (grants + scholarships, verified flag)
+- [ ] Rule-based matching (paths, SUSI/BTEA/1916 rules, labels) + tests
+- [ ] One-question-per-screen scan (6 parts, tooltips, skip, review with Edit, Part 5 session-only)
+- [ ] Results page: tabs, filters, sort, closing soon, compact cards, Help me apply
+- [ ] Update dashboard, calendar, chat, what-if, notifications to new funds

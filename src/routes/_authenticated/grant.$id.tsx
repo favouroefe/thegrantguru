@@ -1,58 +1,35 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { ArrowLeft, ExternalLink } from "lucide-react";
-import { AppShell, Disclaimer } from "@/components/AppShell";
-import { DeadlineBadge, markApplyClicked } from "@/components/GrantCard";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
-import { DraftApplication } from "@/components/DraftApplication";
-import { grantsQuery, matchesQuery } from "@/lib/data";
+import { ArrowLeft } from "lucide-react";
+import { AppShell } from "@/components/AppShell";
+import { MatchLabel, VerifyTag, amountLabel } from "@/components/GrantCard";
+import { ApplyGuide } from "@/components/HelpMeApply";
+import { useMatches } from "@/hooks/use-matches";
 
 export const Route = createFileRoute("/_authenticated/grant/$id")({
-  head: () => ({ meta: [{ title: "Grant details — GrantGuru" }, { name: "description", content: "Eligibility, documents and deadline for this scheme." }, { property: "og:title", content: "Grant details — GrantGuru" }, { property: "og:description", content: "Eligibility, documents and deadline." }] }),
+  head: () => ({ meta: [{ title: "Funding details — GrantGuru" }, { name: "description", content: "How to apply, documents and deadline for this scheme." }, { property: "og:title", content: "Funding details — GrantGuru" }, { property: "og:description", content: "How to apply, documents and deadline." }] }),
   component: GrantDetail,
 });
 
 function GrantDetail() {
   const { id } = Route.useParams();
-  const { data: grants } = useQuery(grantsQuery);
-  const { data: matches } = useQuery(matchesQuery);
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const g = grants?.find((x) => x.id === id);
-  const m = matches?.results.find((r) => r.grant_id === id);
-  if (!grants) return <AppShell><p className="py-10 text-center text-muted-foreground">Loading…</p></AppShell>;
-  if (!g) return <AppShell><p className="py-10 text-center">Grant not found.</p></AppShell>;
+  const { funds, matches, loading } = useMatches();
+  const f = funds.find((x) => x.id === id);
+  const m = matches.find((x) => x.fund.id === id);
+  if (loading) return <AppShell><p className="py-10 text-center text-muted-foreground">Loading…</p></AppShell>;
+  if (!f) return <AppShell><p className="py-10 text-center">We couldn't find that one.</p></AppShell>;
   return (
     <AppShell>
       <Link to="/results" className="flex items-center gap-1 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" /> Results</Link>
-      <h1 className="mt-4 text-3xl font-extrabold">{g.name}</h1>
-      <p className="text-muted-foreground">{g.provider}</p>
-      <p className="mt-4 font-display text-2xl font-bold text-primary">{g.amount_text}</p>
-      <div className="mt-2"><DeadlineBadge deadline={g.deadline} /></div>
-      {m && <div className="mt-5 rounded-2xl bg-secondary p-4 text-sm"><span className="font-bold capitalize">{m.status}:</span> {m.reason}</div>}
-      <section className="mt-6 rounded-3xl bg-card p-5 shadow-card"><h2 className="font-bold">About</h2><p className="mt-2 text-sm leading-relaxed">{g.description}</p></section>
-      <section className="mt-4 rounded-3xl bg-card p-5 shadow-card">
-        <h2 className="font-bold">Criteria</h2>
-        <ul className="mt-2 space-y-1 text-sm">
-          {Object.entries(g.criteria).map(([k, v]) => <li key={k}><span className="capitalize text-muted-foreground">{k.replace(/_/g, " ")}:</span> {Array.isArray(v) ? v.join(", ") : String(v)}</li>)}
-        </ul>
-      </section>
-      <section className="mt-4 rounded-3xl bg-card p-5 shadow-card">
-        <div className="flex items-center justify-between"><h2 className="font-bold">Documents you'll need</h2><span className="text-sm font-semibold text-primary">Ready to apply: {g.documents_needed.filter((d) => checked[d]).length}/{g.documents_needed.length}</span></div>
-        <Progress value={(g.documents_needed.filter((d) => checked[d]).length / Math.max(1, g.documents_needed.length)) * 100} className="mt-3 h-2" />
-        <ul className="mt-3 space-y-3">
-          {g.documents_needed.map((d) => (
-            <li key={d}><label className="flex items-center gap-3 text-sm"><Checkbox checked={!!checked[d]} onCheckedChange={(c) => setChecked((p) => ({ ...p, [d]: !!c }))} /><span className={checked[d] ? "line-through text-muted-foreground" : ""}>{d}</span></label></li>
-          ))}
-        </ul>
-      </section>
-      <DraftApplication grantName={g.name} />
-      <Button asChild className="mt-3 h-14 w-full rounded-2xl text-base">
-        <a href={g.apply_url} target="_blank" rel="noreferrer" onClick={() => markApplyClicked(g.id)}>Apply on official site <ExternalLink className="h-4 w-4" /></a>
-      </Button>
-      <Disclaimer />
+      <div className="mt-4 flex flex-wrap gap-2"><span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold">{f.category}</span><VerifyTag fund={f} /></div>
+      <h1 className="mt-2 text-3xl font-extrabold">{f.name}</h1>
+      <p className="text-muted-foreground">{f.provider}</p>
+      <p className="mt-4 font-display text-2xl font-bold text-primary">{m ? amountLabel(m) : f.amount_text}</p>
+      {m ? (
+        <div className="mt-4 rounded-2xl bg-secondary p-4 text-sm"><MatchLabel label={m.label} /><p className="mt-2"><b>Why you match:</b> {m.why}</p>{m.note && <p className="mt-1 text-muted-foreground">{m.note}</p>}</div>
+      ) : <div className="mt-4 rounded-2xl bg-muted p-4 text-sm text-muted-foreground">Based on your answers, this one probably isn't for you — but do check the rules.</div>}
+      <p className="mt-5 leading-relaxed">{f.description}</p>
+      <div className="mt-6 rounded-3xl bg-card p-5 shadow-card"><h2 className="mb-4 text-xl font-bold">Help me apply</h2><ApplyGuide fund={f} /></div>
+      <p className="mt-10 rounded-2xl bg-muted p-4 text-center text-xs text-muted-foreground">Estimates only. Always check official eligibility on the provider's website.</p>
     </AppShell>
   );
 }

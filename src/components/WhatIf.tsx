@@ -5,9 +5,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { INCOME_BANDS, euro, type Answers } from "@/lib/options";
-import { evaluate, amountFor } from "@/lib/whatif";
-import { saveAnswers, type Grant } from "@/lib/data";
+import { INCOME, euro, storeSituation, type Answers, type Situation } from "@/lib/options";
+import { matchFunds, totalOf } from "@/lib/matching";
+import { saveAnswers } from "@/lib/data";
+import { useMatches } from "@/hooks/use-matches";
 import { toast } from "sonner";
 
 function AnimatedEuro({ value }: { value: number }) {
@@ -28,48 +29,57 @@ function AnimatedEuro({ value }: { value: number }) {
   return <>{euro(v)}</>;
 }
 
-const TOGGLES: [string, string][] = [["first", "First year"], ["lone or teen parent", "Lone parent household"], ["carer", "Carer"], ["disability", "Disability"]];
+const BANDS = INCOME.filter((i) => i.value !== "not_sure");
+const TOGGLES: [string, string][] = [["first", "First year"], ["lone_parent", "Lone parent household"], ["carer", "Carer"], ["disability", "Disability"]];
 
-export function WhatIf({ grants, answers }: { grants: Grant[]; answers: Answers }) {
+export function WhatIf() {
+  const { answers, situation, funds } = useMatches();
+  if (!answers || !funds.length) return null;
+  return <WhatIfInner key={JSON.stringify(answers) + situation.items.join()} answers={answers} situation={situation} funds={funds} />;
+}
+
+function WhatIfInner({ answers, situation, funds }: { answers: Answers; situation: Situation; funds: ReturnType<typeof useMatches>["funds"] }) {
   const qc = useQueryClient();
   const [a, setA] = useState<Answers>(answers);
-  const { likelyIds, total } = evaluate(grants, a);
-  const prev = useRef<string[]>(likelyIds);
+  const [s, setS] = useState<Situation>(situation);
+  const [dist, setDist] = useState(answers.distance_30 === "yes" ? 50 : 10);
+  const ms = matchFunds(funds, { ...a, distance_30: dist >= 30 ? "yes" : "no" }, s).filter((m) => m.counted);
+  const total = totalOf(ms);
+  const ids = ms.map((m) => m.fund.id);
+  const prev = useRef<string[]>(ids);
   const [fresh, setFresh] = useState<Set<string>>(new Set());
-  const [gone, setGone] = useState<Grant[]>([]);
+  const [gone, setGone] = useState<string[]>([]);
 
-  const key = likelyIds.join(",");
+  const key = ids.join(",");
   useEffect(() => {
-    const added = likelyIds.filter((id) => !prev.current.includes(id));
-    const removed = prev.current.filter((id) => !likelyIds.includes(id));
-    prev.current = likelyIds;
+    const added = ids.filter((id) => !prev.current.includes(id));
+    const removed = prev.current.filter((id) => !ids.includes(id));
+    prev.current = ids;
     if (!added.length && !removed.length) return;
-    setFresh(new Set(added));
-    setGone(grants.filter((g) => removed.includes(g.id)));
+    setFresh(new Set(added)); setGone(removed);
     const t = setTimeout(() => { setFresh(new Set()); setGone([]); }, 1200);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  const band = Math.max(0, INCOME_BANDS.indexOf(a.income_band ?? ""));
-  const dist = Math.min(300, Number(a.distance_km ?? 0) || 0);
-  const has = (s: string) => (s === "first" ? a.year === "1" && a.first_time === "yes" : (a.situation ?? []).includes(s));
-  function toggle(s: string, on: boolean) {
-    if (s === "first") return setA((p) => ({ ...p, year: on ? "1" : p.year === "1" ? "2" : p.year, first_time: on ? "yes" : p.first_time }));
-    setA((p) => {
-      const cur = new Set((p.situation ?? []).filter((x) => x !== "prefer not to say"));
-      on ? cur.add(s) : cur.delete(s);
-      return { ...p, situation: [...cur] };
-    });
+  const band = Math.max(0, BANDS.findIndex((b) => b.value === a.income));
+  const has = (k: string) => (k === "first" ? a.year === "1" && a.first_time === "yes" : s.items.includes(k));
+  function toggle(k: string, on: boolean) {
+    if (k === "first") return setA((p) => ({ ...p, year: on ? "1" : p.year === "1" ? "2" : p.year, first_time: on ? "yes" : p.first_time }));
+    setS((p) => ({ ...p, pnts: false, items: on ? [...p.items, k] : p.items.filter((x) => x !== k) }));
   }
   async function save() {
-    try { await saveAnswers(a); qc.invalidateQueries({ queryKey: ["profile"] }); toast.success("Saved as your profile. Re-scan for full AI results."); }
-    catch (e) { toast.error((e as Error).message); }
+    try {
+      await saveAnswers({ ...a, distance_30: dist >= 30 ? "yes" : "no" });
+      storeSituation(s);
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Saved as your profile");
+    } catch (e) { toast.error((e as Error).message); }
   }
+  const name = (id: string) => funds.find((f) => f.id === id)?.name ?? id;
 
-  const likely = grants.filter((g) => likelyIds.includes(g.id));
   return (
-    <Collapsible className="mt-6 rounded-3xl bg-card shadow-card">
+    <Collapsible className="mt-4 rounded-3xl bg-card shadow-card">
       <CollapsibleTrigger className="group flex w-full items-center justify-between px-5 py-4 text-left">
         <span className="flex items-center gap-2 font-display text-lg font-bold"><Sparkles className="h-5 w-5 text-primary" /> What if my situation changed?</span>
         <ChevronDown className="h-4 w-4 transition group-data-[state=open]:rotate-180" />
@@ -80,12 +90,12 @@ export function WhatIf({ grants, answers }: { grants: Grant[]; answers: Answers 
           <p className="font-display text-4xl font-extrabold text-accent"><AnimatedEuro value={total} /></p>
         </div>
         <div>
-          <div className="flex justify-between text-sm"><span className="font-semibold">Household income</span><span className="text-muted-foreground">{INCOME_BANDS[band]}</span></div>
-          <Slider className="mt-3" min={0} max={4} step={1} value={[band]} onValueChange={([v]) => setA((p) => ({ ...p, income_band: INCOME_BANDS[v ?? 0] }))} />
+          <div className="flex justify-between text-sm"><span className="font-semibold">Household income</span><span className="text-muted-foreground">{BANDS[band]!.label}</span></div>
+          <Slider className="mt-3" min={0} max={4} step={1} value={[band]} onValueChange={([v]) => setA((p) => ({ ...p, income: BANDS[v ?? 0]!.value }))} />
         </div>
         <div>
           <div className="flex justify-between text-sm"><span className="font-semibold">Distance from college</span><span className="text-muted-foreground">{dist} km</span></div>
-          <Slider className="mt-3" min={0} max={300} step={5} value={[dist]} onValueChange={([v]) => setA((p) => ({ ...p, distance_km: String(v ?? 0) }))} />
+          <Slider className="mt-3" min={0} max={300} step={5} value={[dist]} onValueChange={([v]) => setDist(v ?? 0)} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           {TOGGLES.map(([k, label]) => (
@@ -95,17 +105,15 @@ export function WhatIf({ grants, answers }: { grants: Grant[]; answers: Answers 
           ))}
         </div>
         <div>
-          <p className="mb-2 text-sm font-semibold">Likely eligible ({likely.length})</p>
+          <p className="mb-2 text-sm font-semibold">Likely eligible ({ms.length})</p>
           <ul className="space-y-2">
-            {likely.map((g) => (
-              <li key={g.id} className={`flex animate-tick-in justify-between gap-3 rounded-2xl px-4 py-2.5 text-sm transition-colors duration-700 ${fresh.has(g.id) ? "bg-accent text-accent-foreground" : "bg-secondary"}`}>
-                <span className="font-medium">{g.name}</span><span className="font-semibold">{euro(amountFor(g, a))}</span>
+            {ms.map((m) => (
+              <li key={m.fund.id} className={`flex animate-tick-in justify-between gap-3 rounded-2xl px-4 py-2.5 text-sm transition-colors duration-700 ${fresh.has(m.fund.id) ? "bg-accent text-accent-foreground" : "bg-secondary"}`}>
+                <span className="font-medium">{m.fund.name}</span><span className="font-semibold">{euro(m.amount ?? 0)}</span>
               </li>
             ))}
-            {gone.map((g) => (
-              <li key={"x" + g.id} className="flex justify-between rounded-2xl bg-destructive/10 px-4 py-2.5 text-sm text-muted-foreground line-through animate-out fade-out slide-out-to-right duration-1000 fill-mode-forwards">
-                <span>{g.name}</span>
-              </li>
+            {gone.map((id) => (
+              <li key={"x" + id} className="flex justify-between rounded-2xl bg-destructive/10 px-4 py-2.5 text-sm text-muted-foreground line-through animate-out fade-out slide-out-to-right duration-1000 fill-mode-forwards"><span>{name(id)}</span></li>
             ))}
           </ul>
         </div>

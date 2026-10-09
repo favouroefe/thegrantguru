@@ -1,153 +1,270 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Lock, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { z } from "zod";
+import { ArrowLeft, ArrowRight, Lock, Pencil, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Autocomplete, CheckCard, OptionCards, WhyWeAsk, yesNo } from "@/components/scan/inputs";
 import { profileQuery, saveAnswers } from "@/lib/data";
-import { COLLEGES, COUNTIES, FEE_STATUS, INCOME_BANDS, SITUATIONS, type Answers } from "@/lib/options";
+import {
+  COLLEGES, COUNTIES, COUNTRIES, COURSES, IDENTITIES, INCOME, SITUATIONS, TALENTS,
+  isStemCourse, loadSituation, pathFor, storeSituation, suggestIdentity, type Answers, type Situation,
+} from "@/lib/options";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
-  head: () => ({ meta: [{ title: "Find eligible grants — GrantGuru" }, { name: "description", content: "Tell us about yourself to match student funding." }, { property: "og:title", content: "Find eligible grants — GrantGuru" }, { property: "og:description", content: "Five quick steps to match your funding." }] }),
+  validateSearch: z.object({ q: z.string().optional() }),
+  head: () => ({ meta: [{ title: "Find my funding — GrantGuru" }, { name: "description", content: "A few quick questions to match you with student funding." }, { property: "og:title", content: "Find my funding — GrantGuru" }, { property: "og:description", content: "A few quick questions to match your funding." }] }),
   component: Onboarding,
 });
 
-const STEPS = ["About you", "Residency & status", "Money & household", "Your situation", "Anything else?", "Review"];
+const PARTS = ["Where you're from", "Your studies", "Home & money", "Talents & interests", "Your situation", "Anything else?"];
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <div className="space-y-1.5"><Label className="text-sm font-semibold">{label}</Label>{children}</div>;
+interface Q {
+  id: string; part: number; title: string; sub?: string; why: string; optional?: boolean;
+  show?: (a: Answers) => boolean; valid: (a: Answers, s: Situation) => boolean;
+  render: (ctx: Ctx) => ReactNode; summary: (a: Answers, s: Situation) => string;
 }
-function Select({ value, onChange, options, placeholder = "Choose…" }: { value?: string | undefined; onChange: (v: string) => void; options: string[]; placeholder?: string }) {
-  return (
-    <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base">
-      <option value="" disabled>{placeholder}</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-    </select>
-  );
-}
-function Pills({ value, onChange, options }: { value?: string | undefined; onChange: (v: string) => void; options: string[] }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button type="button" key={o} onClick={() => onChange(o)} className={`rounded-full border px-4 py-2 text-sm capitalize transition ${value === o ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-secondary"}`}>{o}</button>
-      ))}
-    </div>
-  );
-}
-function Privacy() {
-  return <p className="flex items-center gap-2 rounded-2xl bg-secondary p-3 text-sm text-secondary-foreground"><Lock className="h-4 w-4" /> Only used to match grants. Never shared.</p>;
-}
+interface Ctx { a: Answers; set: (patch: Partial<Answers>) => void; s: Situation; setS: (s: Situation) => void }
+
+const lbl = (opts: readonly { value: string; label: string }[], v?: string) => opts.find((o) => o.value === v)?.label ?? "—";
+const has = (v?: string) => !!v && v.length > 0;
+const pathA = (a: Answers) => pathFor(a.identity) === "A";
+const pathB = (a: Answers) => pathFor(a.identity) === "B";
+const YEARS = [{ value: "1", label: "1st year" }, { value: "2", label: "2nd year" }, { value: "3", label: "3rd year" }, { value: "4", label: "4th year" }, { value: "5+", label: "5th year or more" }, { value: "postgrad", label: "Postgrad" }];
+const STUDY = [{ value: "full-time", label: "Full-time" }, { value: "part-time", label: "Part-time" }];
+const LEVELS = [{ value: "club", label: "Club" }, { value: "county", label: "County" }, { value: "national", label: "National" }, { value: "international", label: "International" }];
+const GENDERS = [{ value: "woman", label: "Woman" }, { value: "man", label: "Man" }, { value: "non-binary", label: "Non-binary" }, { value: "self", label: "Self-describe" }, { value: "pnts", label: "Prefer not to say" }];
+
+const QUESTIONS: Q[] = [
+  { id: "identity", part: 0, title: "Which of these describes you best?", why: "Most state grants depend on your citizenship or residency status. This tells us which funds you can apply for.",
+    valid: (a) => has(a.identity), summary: (a) => lbl(IDENTITIES, a.identity),
+    render: ({ a, set }) => <OptionCards options={IDENTITIES} value={a.identity} onChange={(v) => set({ identity: v })} /> },
+  { id: "nationality", part: 0, title: "What's your nationality?", sub: "Start typing and pick from the list.", why: "Some scholarships are only for certain countries. It also helps us double-check the last answer.",
+    valid: (a) => has(a.nationality), summary: (a) => a.nationality ?? "—",
+    render: ({ a, set }) => {
+      const sug = suggestIdentity(a.identity, a.nationality);
+      return (<>
+        <Autocomplete options={COUNTRIES} value={a.nationality} onChange={(v) => set({ nationality: v })} placeholder="e.g. Ireland" />
+        {sug && (
+          <div className="mt-4 rounded-2xl bg-secondary p-4 text-sm">
+            Just checking — {a.nationality} usually means <b>{lbl(IDENTITIES, sug)}</b>.
+            <button type="button" onClick={() => set({ identity: sug })} className="ml-1 font-semibold text-primary underline">Switch to that</button>
+          </div>
+        )}
+      </>);
+    } },
+  { id: "residency", part: 0, title: "Have you lived in Ireland, the UK or the EU/EEA for at least 3 of the last 5 years?", why: "SUSI and free fees usually need 3 years of living here (or in the UK/EU) before your course starts.",
+    show: pathA, valid: (a) => has(a.residency), summary: (a) => lbl(yesNo(true), a.residency),
+    render: ({ a, set }) => <OptionCards options={yesNo(true)} value={a.residency} onChange={(v) => set({ residency: v })} /> },
+
+  { id: "college", part: 1, title: "Which college are you going to?", why: "Lots of scholarships and hardship funds are run by each college.",
+    valid: (a) => has(a.college), summary: (a) => a.college ?? "—",
+    render: ({ a, set }) => <Autocomplete options={COLLEGES} value={a.college} onChange={(v) => set({ college: v })} placeholder="e.g. DCU" /> },
+  { id: "course", part: 1, title: "What are you studying?", sub: "Pick from the list or just type it.", why: "Some funds are for certain subjects, like science and tech (STEM).",
+    valid: (a) => has(a.course?.trim()), summary: (a) => `${a.course ?? "—"}${isStemCourse(a.course) ? " (STEM)" : ""}`,
+    render: ({ a, set }) => (<>
+      <Autocomplete options={COURSES} value={a.course} onChange={(v) => set({ course: v })} placeholder="e.g. Nursing" free />
+      {isStemCourse(a.course) && <p className="mt-3 inline-flex rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">🔬 STEM course</p>}
+    </>) },
+  { id: "year", part: 1, title: "What year are you in?", why: "Some funds, like the 1916 Bursary, are only for first years.",
+    valid: (a) => has(a.year), summary: (a) => lbl(YEARS, a.year),
+    render: ({ a, set }) => <OptionCards options={YEARS} value={a.year} onChange={(v) => set({ year: v })} /> },
+  { id: "study", part: 1, title: "Are you studying full-time or part-time?", why: "SUSI grants are only for full-time students. Other help is open to part-time students too.",
+    valid: (a) => has(a.study), summary: (a) => lbl(STUDY, a.study),
+    render: ({ a, set }) => <OptionCards options={STUDY} value={a.study} onChange={(v) => set({ study: v })} /> },
+  { id: "first_time", part: 1, title: "Is this your first time in college?", why: "Many grants only pay for your first course at each level.",
+    valid: (a) => has(a.first_time), summary: (a) => lbl(yesNo(), a.first_time),
+    render: ({ a, set }) => <OptionCards options={yesNo()} value={a.first_time} onChange={(v) => set({ first_time: v })} /> },
+
+  { id: "county", part: 2, title: "Which county is your home in?", why: "Some local funds and credit union bursaries depend on where you live.",
+    show: pathA, valid: (a) => has(a.county), summary: (a) => a.county ?? "—",
+    render: ({ a, set }) => <Autocomplete options={COUNTIES} value={a.county} onChange={(v) => set({ county: v })} placeholder="e.g. Mayo" /> },
+  { id: "distance_30", part: 2, title: "Is your home 30km or more from your college?", why: "If you live 30km or more away, SUSI pays you a higher rate.",
+    show: pathA, valid: (a) => has(a.distance_30), summary: (a) => lbl(yesNo(true), a.distance_30),
+    render: ({ a, set }) => <OptionCards options={yesNo(true)} value={a.distance_30} onChange={(v) => set({ distance_30: v })} /> },
+  { id: "income", part: 2, title: "Roughly how much does your household earn in a year?", sub: "Before tax, everyone you live with combined. A rough guess is fine.", why: "Most grants are means-tested. This is the biggest thing that decides what you get.",
+    show: pathA, valid: (a) => has(a.income), summary: (a) => lbl(INCOME, a.income),
+    render: ({ a, set }) => <OptionCards options={INCOME} value={a.income} onChange={(v) => set({ income: v })} /> },
+  { id: "over23", part: 2, title: "Are you 23 or older?", why: "Mature students (23+) can get extra funds and scholarships.",
+    show: pathA, valid: (a) => has(a.over23), summary: (a) => lbl(yesNo(), a.over23),
+    render: ({ a, set }) => <OptionCards options={yesNo()} value={a.over23} onChange={(v) => set({ over23: v })} /> },
+  { id: "origin_country", part: 2, title: "Which country are you from?", sub: "Optional — skip if you'd rather not say.", why: "Some scholarships are for students from particular countries.", optional: true,
+    show: pathB, valid: () => true, summary: (a) => a.origin_country || "—",
+    render: ({ a, set }) => <Autocomplete options={COUNTRIES} value={a.origin_country} onChange={(v) => set({ origin_country: v })} placeholder="e.g. India" /> },
+  { id: "home_scholarship", part: 2, title: "Do you have a scholarship from your home country?", why: "Some Irish scholarships can't be combined with another one.",
+    show: pathB, valid: (a) => has(a.home_scholarship), summary: (a) => lbl(yesNo(), a.home_scholarship),
+    render: ({ a, set }) => <OptionCards options={yesNo()} value={a.home_scholarship} onChange={(v) => set({ home_scholarship: v })} /> },
+  { id: "works", part: 2, title: "Do you work part-time?", why: "Part-time work usually doesn't stop you getting help, but some funds ask about it.",
+    valid: (a) => has(a.works), summary: (a) => lbl(yesNo(), a.works),
+    render: ({ a, set }) => <OptionCards options={yesNo()} value={a.works} onChange={(v) => set({ works: v })} /> },
+
+  { id: "talents", part: 3, title: "What are you into?", sub: "Select all that apply.", why: "Lots of scholarships reward sport, results, creativity or community work — not just money worries.",
+    valid: (a) => (a.talents?.length ?? 0) > 0 && (!a.talents?.includes("sport") || (has(a.sport_name) && has(a.sport_level))),
+    summary: (a) => (a.talents ?? []).map((t) => lbl(TALENTS, t)).join(", ") + (a.talents?.includes("sport") ? ` (${a.sport_name}, ${a.sport_level})` : ""),
+    render: ({ a, set }) => {
+      const t = a.talents ?? [];
+      const toggle = (v: string) => set({ talents: v === "none" ? (t.includes("none") ? [] : ["none"]) : t.includes(v) ? t.filter((x) => x !== v) : [...t.filter((x) => x !== "none"), v] });
+      return (<>
+        <div className="flex flex-wrap gap-2">
+          {TALENTS.map((o) => (
+            <button key={o.value} type="button" onClick={() => toggle(o.value)} className={`rounded-full border-2 px-4 py-3 text-sm font-medium transition ${t.includes(o.value) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:border-primary/40"}`}>{o.label}</button>
+          ))}
+        </div>
+        {t.includes("sport") && (
+          <div className="mt-5 space-y-3 rounded-2xl bg-secondary p-4">
+            <p className="text-sm font-semibold">Which sport?</p>
+            <Input value={a.sport_name ?? ""} onChange={(e) => set({ sport_name: e.target.value })} placeholder="e.g. Camogie" className="h-12 rounded-xl bg-card" />
+            <p className="text-sm font-semibold">What level do you play at?</p>
+            <div className="grid grid-cols-2 gap-2">{LEVELS.map((l) => <button key={l.value} type="button" onClick={() => set({ sport_level: l.value })} className={`rounded-xl border-2 px-3 py-3 text-sm ${a.sport_level === l.value ? "border-primary bg-card font-semibold" : "border-transparent bg-card"}`}>{l.label}</button>)}</div>
+          </div>
+        )}
+      </>);
+    } },
+
+  { id: "situation", part: 4, optional: true, title: "Your situation", sub: "These are optional and only used to find extra funding for you. Nothing here is stored.",
+    why: "Some funds are set aside for carers, parents, care-experienced students and others. We keep these answers on this device only, until you close the tab.",
+    valid: () => true, summary: (_a, s) => s.pnts ? "Prefer not to say" : [...s.items.map((i) => SITUATIONS.find((x) => x.value === i)?.label ?? i), ...(s.gender ? [lbl(GENDERS, s.gender)] : [])].join(", ") || "—",
+    render: ({ s, setS }) => {
+      const toggle = (v: string) => setS({ ...s, pnts: false, items: s.items.includes(v) ? s.items.filter((x) => x !== v) : [...s.items, v] });
+      return (
+        <div className="space-y-3">
+          <p className="font-bold">Select all that apply.</p>
+          {SITUATIONS.map((o) => <CheckCard key={o.value} on={s.items.includes(o.value)} onClick={() => toggle(o.value)} label={o.label} help={"help" in o ? o.help : undefined} />)}
+          <div className="rounded-2xl border-2 border-border bg-card p-4">
+            <p className="font-medium">Gender</p>
+            <div className="mt-3 flex flex-wrap gap-2">{GENDERS.map((g) => <button key={g.value} type="button" onClick={() => setS({ ...s, pnts: false, gender: g.value })} className={`rounded-full border-2 px-4 py-2 text-sm ${s.gender === g.value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>{g.label}</button>)}</div>
+            {s.gender === "self" && <Input value={s.gender_self ?? ""} onChange={(e) => setS({ ...s, gender_self: e.target.value })} placeholder="How do you describe yourself?" className="mt-3 h-12 rounded-xl" />}
+          </div>
+          <CheckCard on={!!s.pnts} onClick={() => setS(s.pnts ? { items: [] } : { items: [], pnts: true })} label="Prefer not to say" />
+        </div>
+      );
+    } },
+
+  { id: "notes", part: 5, optional: true, title: "Tell us anything else in your own words (optional).", why: "Sometimes there's something the questions missed. It helps when you ask GrantGuru for advice later.",
+    valid: () => true, summary: (a) => a.notes || "—",
+    render: ({ a, set }) => <Textarea rows={7} value={a.notes ?? ""} onChange={(e) => set({ notes: e.target.value })} className="rounded-2xl text-base" placeholder="e.g. I'm moving out of home this year and work weekends…" /> },
+];
 
 function Onboarding() {
   const { data: profile, isLoading } = useQuery(profileQuery);
+  const { q: startAt } = Route.useSearch();
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
   const [a, setA] = useState<Answers>({});
+  const [s, setSState] = useState<Situation>({ items: [] });
+  const [idx, setIdx] = useState(0);
+  const [review, setReview] = useState(false);
+  const [dir, setDir] = useState<1 | -1>(1);
   const [loaded, setLoaded] = useState(false);
 
+  const visible = QUESTIONS.filter((q) => !q.show || q.show(a));
+  const q = visible[Math.min(idx, visible.length - 1)]!;
+
   useEffect(() => {
-    if (!loaded && profile) { setA(profile.answers ?? {}); setLoaded(true); }
-  }, [profile, loaded]);
+    if (loaded || !profile) return;
+    const start = (profile.answers ?? profile.partial ?? {}) as Answers;
+    setA(start);
+    setSState(loadSituation());
+    const vis = QUESTIONS.filter((x) => !x.show || x.show(start));
+    if (startAt) { const i = vis.findIndex((x) => x.id === startAt); if (i >= 0) setIdx(i); }
+    else if (profile.answers) setReview(true);
+    setLoaded(true);
+  }, [profile, loaded, startAt]);
 
-  const set = (k: keyof Answers) => (v: string) => setA((p) => ({ ...p, [k]: v }));
-  const num = (k: keyof Answers) => (e: React.ChangeEvent<HTMLInputElement>) => setA((p) => ({ ...p, [k]: e.target.value }));
+  const set = (patch: Partial<Answers>) => setA((p) => ({ ...p, ...patch }));
+  const setS = (n: Situation) => { setSState(n); storeSituation(n); };
 
-  async function persist() {
-    try { await saveAnswers(a); qc.invalidateQueries({ queryKey: ["profile"] }); } catch (e) { toast.error((e as Error).message); }
+  async function persist(next = a) {
+    try { await saveAnswers(next); qc.invalidateQueries({ queryKey: ["profile"] }); } catch (e) { toast.error((e as Error).message); }
   }
-  async function next() { await persist(); setStep((s) => Math.min(s + 1, STEPS.length - 1)); window.scrollTo(0, 0); }
+  const ok = q.valid(a, s);
+  const go = useCallback(async () => {
+    if (review) return;
+    if (!ok) return;
+    setDir(1);
+    void persist();
+    if (idx >= visible.length - 1) setReview(true); else setIdx(idx + 1);
+    window.scrollTo(0, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ok, idx, visible.length, review, a]);
+  function back() {
+    setDir(-1);
+    if (review) { setReview(false); setIdx(visible.length - 1); return; }
+    if (idx === 0) navigate({ to: "/home" }); else setIdx(idx - 1);
+  }
+  function edit(part: number) { setDir(-1); setReview(false); setIdx(visible.findIndex((x) => x.part === part)); }
   async function finish() { await persist(); navigate({ to: "/results", search: { scan: true } }); }
+  async function later() { await persist(); toast.success("Saved — come back anytime."); navigate({ to: "/home" }); }
 
-  function toggleSituation(s: string) {
-    setA((p) => {
-      const cur = new Set(p.situation ?? []);
-      if (s === "prefer not to say") return { ...p, situation: cur.has(s) ? [] : [s] };
-      cur.delete("prefer not to say");
-      cur.has(s) ? cur.delete(s) : cur.add(s);
-      return { ...p, situation: [...cur] };
-    });
-  }
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      e.preventDefault();
+      if (review) void finish(); else void go();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [go, review]);
 
-  if (isLoading) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
+  if (isLoading || !loaded) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
 
-  const review: [string, string | undefined][] = [
-    ["Age", a.age], ["College", a.college], ["Course", a.course], ["Year", a.year], ["Study", a.study], ["Level", a.level], ["First time in HE", a.first_time],
-    ["Nationality", a.nationality], ["Fee status", a.fee_status], ["Years in IE/EU/EEA/UK/CH (last 5)", a.residency_years], ["County", a.county], ["Distance to college", a.distance_km && `${a.distance_km} km`],
-    ["Lives with parents", a.lives_with_parents], ["Household income", a.income_band], ["Dependants", a.dependants], ["Others in college", a.others_in_college], ["Social welfare", a.social_welfare],
-    ["Situation", (a.situation ?? []).join(", ") || "—"], ["Notes", a.notes],
-  ];
+  const part = review ? 6 : q.part;
+  const progress = review ? 100 : ((idx + 1) / (visible.length + 1)) * 100;
+  const sensitive = !review && (q.part === 2 || q.part === 4);
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-xl px-5 py-6">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <button onClick={() => (step === 0 ? navigate({ to: "/home" }) : setStep(step - 1))} className="flex items-center gap-1"><ArrowLeft className="h-4 w-4" /> Back</button>
-          <span>{step < 5 ? `Part ${step + 1} of 5` : "Review"}</span>
+      <div className="mx-auto flex min-h-screen max-w-xl flex-col px-5 py-6">
+        <div className="flex items-center justify-between text-sm">
+          <button onClick={back} className="flex items-center gap-1 text-muted-foreground"><ArrowLeft className="h-4 w-4" /> Back</button>
+          <button onClick={later} className="font-medium text-primary">Save & finish later</button>
         </div>
-        <Progress value={((step + 1) / STEPS.length) * 100} className="mt-3 h-2" />
-        <h1 className="mt-8 text-3xl font-extrabold">{STEPS[step]}</h1>
+        <p className="mt-5 text-sm font-semibold text-primary">{review ? "Review your answers" : `Part ${part + 1} of 6 · ${PARTS[part]}`}</p>
+        <Progress value={progress} className="mt-2 h-2" />
 
-        <div className="mt-6 space-y-5">
-          {step === 0 && (<>
-            <Field label="Age"><Input type="number" inputMode="numeric" value={a.age ?? ""} onChange={num("age")} className="h-12 rounded-xl" /></Field>
-            <Field label="College"><Select value={a.college} onChange={set("college")} options={COLLEGES} /></Field>
-            <Field label="Course"><Input value={a.course ?? ""} onChange={num("course")} placeholder="e.g. Nursing" className="h-12 rounded-xl" /></Field>
-            <Field label="Year of study"><Pills value={a.year} onChange={set("year")} options={["1", "2", "3", "4", "5+"]} /></Field>
-            <Field label="Full-time or part-time?"><Pills value={a.study} onChange={set("study")} options={["full-time", "part-time"]} /></Field>
-            <Field label="Undergrad or postgrad?"><Pills value={a.level} onChange={set("level")} options={["undergrad", "postgrad"]} /></Field>
-            <Field label="First time in higher education?"><Pills value={a.first_time} onChange={set("first_time")} options={["yes", "no"]} /></Field>
-          </>)}
-          {step === 1 && (<>
-            <Field label="Nationality"><Input value={a.nationality ?? ""} onChange={num("nationality")} placeholder="e.g. Irish" className="h-12 rounded-xl" /></Field>
-            <Field label="Fee status"><Pills value={a.fee_status} onChange={set("fee_status")} options={FEE_STATUS} /></Field>
-            <Field label="Years lived in Ireland/EU/EEA/UK/Switzerland in the last 5"><Pills value={a.residency_years} onChange={set("residency_years")} options={["0", "1", "2", "3", "4", "5"]} /></Field>
-            <Field label="County of home address"><Select value={a.county} onChange={set("county")} options={COUNTIES} /></Field>
-            <Field label="Distance from home to college (km)"><Input type="number" inputMode="numeric" value={a.distance_km ?? ""} onChange={num("distance_km")} className="h-12 rounded-xl" /></Field>
-          </>)}
-          {step === 2 && (<>
-            <Privacy />
-            <Field label="Do you live with your parents?"><Pills value={a.lives_with_parents} onChange={set("lives_with_parents")} options={["yes", "no"]} /></Field>
-            <Field label="Household income"><Pills value={a.income_band} onChange={set("income_band")} options={INCOME_BANDS} /></Field>
-            <Field label="Number of dependants in household"><Input type="number" inputMode="numeric" value={a.dependants ?? ""} onChange={num("dependants")} className="h-12 rounded-xl" /></Field>
-            <Field label="Number of others in college"><Input type="number" inputMode="numeric" value={a.others_in_college ?? ""} onChange={num("others_in_college")} className="h-12 rounded-xl" /></Field>
-            <Field label="Are you on any social welfare payment?"><Pills value={a.social_welfare} onChange={set("social_welfare")} options={["yes", "no"]} /></Field>
-          </>)}
-          {step === 3 && (<>
-            <Privacy />
-            <p className="text-muted-foreground">Tap any that apply — all optional.</p>
-            <div className="flex flex-wrap gap-2">
-              {[...SITUATIONS, "prefer not to say"].map((s) => {
-                const on = a.situation?.includes(s);
-                return <button key={s} type="button" onClick={() => toggleSituation(s)} className={`rounded-full border px-4 py-2 text-sm transition ${on ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-secondary"}`}>{s}</button>;
+        {review ? (
+          <div key="review" className="mt-8 flex-1 animate-in fade-in slide-in-from-right-8 duration-300">
+            <h1 className="text-3xl font-extrabold">All good?</h1>
+            <p className="mt-1 text-muted-foreground">Check your answers, then we'll find your funding.</p>
+            <div className="mt-6 space-y-4">
+              {PARTS.map((name, p) => {
+                const qs = visible.filter((x) => x.part === p);
+                return (
+                  <section key={name} className="rounded-3xl bg-card p-5 shadow-card">
+                    <div className="flex items-center justify-between"><h2 className="font-bold">{name}</h2><button onClick={() => edit(p)} className="flex items-center gap-1 text-sm font-semibold text-primary"><Pencil className="h-3.5 w-3.5" /> Edit</button></div>
+                    <dl className="mt-3 space-y-2">
+                      {qs.map((x) => <div key={x.id} className="text-sm"><dt className="text-muted-foreground">{x.title}</dt><dd className="font-medium">{x.summary(a, s)}</dd></div>)}
+                    </dl>
+                  </section>
+                );
               })}
             </div>
-          </>)}
-          {step === 4 && (
-            <Field label="Tell us anything about your situation in your own words.">
-              <Textarea rows={7} value={a.notes ?? ""} onChange={(e) => setA((p) => ({ ...p, notes: e.target.value }))} className="rounded-2xl text-base" placeholder="e.g. I'm moving out of home this year and work part-time…" />
-            </Field>
-          )}
-          {step === 5 && (
-            <dl className="divide-y rounded-3xl bg-card shadow-card">
-              {review.map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-4 px-5 py-3 text-sm"><dt className="text-muted-foreground">{k}</dt><dd className="text-right font-medium capitalize">{v || "—"}</dd></div>
-              ))}
-            </dl>
-          )}
-        </div>
+            <Button onClick={finish} className="mt-8 h-14 w-full rounded-2xl bg-accent text-base font-bold text-accent-foreground hover:bg-accent/90"><Sparkles className="h-5 w-5" /> Find my funding</Button>
+          </div>
+        ) : (
+          <div key={q.id} className={`mt-8 flex-1 animate-in fade-in duration-300 ${dir === 1 ? "slide-in-from-right-8" : "slide-in-from-left-8"}`}>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">{q.title}</h1>
+            </div>
+            {q.sub && <p className="mt-2 text-muted-foreground">{q.sub}</p>}
+            <div className="mt-2"><WhyWeAsk text={q.why} /></div>
+            {sensitive && <p className="mt-4 flex items-center gap-2 rounded-2xl bg-secondary p-3 text-sm text-secondary-foreground"><Lock className="h-4 w-4" /> Only used to match grants. Never shared.</p>}
+            <div className="mt-6">{q.render({ a, set, s, setS })}</div>
+          </div>
+        )}
 
-        <div className="mt-8">
-          {step < 5 ? (
-            <Button onClick={next} className="h-14 w-full rounded-2xl text-base">Next <ArrowRight className="h-4 w-4" /></Button>
-          ) : (
-            <Button onClick={finish} className="h-14 w-full rounded-2xl bg-accent text-base font-bold text-accent-foreground hover:bg-accent/90"><Sparkles className="h-5 w-5" /> Find my grants</Button>
-          )}
-        </div>
+        {!review && (
+          <div className="sticky bottom-0 mt-8 bg-background pb-2 pt-3">
+            <Button onClick={go} disabled={!ok} className="h-14 w-full rounded-2xl text-base">Continue <ArrowRight className="h-4 w-4" /></Button>
+            {!ok && <p className="mt-2 text-center text-sm text-muted-foreground">{q.id === "talents" ? "Pick at least one (or “None of these”) to continue" : "Pick an option to continue"}</p>}
+            {(q.part >= 4 || q.optional) && <button onClick={() => { setDir(1); if (idx >= visible.length - 1) setReview(true); else setIdx(idx + 1); }} className="mt-3 w-full text-center text-sm font-semibold text-primary underline">Skip</button>}
+          </div>
+        )}
       </div>
     </div>
   );

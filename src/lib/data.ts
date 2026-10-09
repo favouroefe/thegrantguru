@@ -1,13 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { MatchResult, WebResult } from "./grants.functions";
+import type { WebResult } from "./grants.functions";
 import type { Answers } from "./options";
+import type { Fund } from "./matching";
 
-export interface Grant {
-  id: string; name: string; provider: string; type: string; amount_text: string; amount_max_eur: number;
-  deadline: string | null; description: string; criteria: Record<string, unknown>; apply_url: string;
-  documents_needed: string[]; audience_tags: string[];
-}
+export type { Fund };
 export interface UserGrant { grant_id: string; saved: boolean; status: string | null }
 
 async function uid() {
@@ -22,26 +19,26 @@ export const profileQuery = queryOptions({
     const id = await uid();
     const { data, error } = await supabase.from("profiles").select("name, answers").eq("id", id).maybeSingle();
     if (error) throw error;
-    return { name: data?.name ?? "", answers: (data?.answers as Answers | null) ?? null };
+    const answers = (data?.answers as Answers | null) ?? null;
+    // Profiles saved before the new scan have no `identity`; treat them as not started.
+    return { name: data?.name ?? "", answers: answers && "identity" in answers ? answers : null, partial: answers };
   },
 });
-export const grantsQuery = queryOptions({
-  queryKey: ["grants"],
+export const fundsQuery = queryOptions({
+  queryKey: ["funds"],
   queryFn: async () => {
-    const { data, error } = await supabase.from("grants").select("*").order("name");
+    const { data, error } = await supabase.from("funds").select("*").order("name");
     if (error) throw error;
-    return data as unknown as Grant[];
+    return data as unknown as Fund[];
   },
 });
-export const matchesQuery = queryOptions({
-  queryKey: ["matches"],
+export const webResultsQuery = queryOptions({
+  queryKey: ["web_results"],
   queryFn: async () => {
     const id = await uid();
-    const { data, error } = await supabase.from("matches").select("results, web_results, created_at").eq("user_id", id).maybeSingle();
+    const { data, error } = await supabase.from("matches").select("web_results").eq("user_id", id).maybeSingle();
     if (error) throw error;
-    return data
-      ? { results: data.results as unknown as MatchResult[], web: (data.web_results as unknown as WebResult[] | null) ?? null, created_at: data.created_at }
-      : null;
+    return (data?.web_results as unknown as WebResult[] | null) ?? null;
   },
 });
 export const userGrantsQuery = queryOptions({

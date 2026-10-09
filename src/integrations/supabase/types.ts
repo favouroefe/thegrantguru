@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      funds: {
+        Row: {
+          amount_far_eur: number | null
+          amount_max_eur: number | null
+          amount_text: string
+          amount_varies: boolean
+          apply_url: string
+          category: string
+          colleges: string[]
+          created_at: string
+          deadline: string | null
+          description: string
+          documents_needed: string[]
+          how_to_apply_steps: string[]
+          id: string
+          name: string
+          open_to_tags: string[]
+          provider: string
+          requires_any_tags: string[]
+          requires_tags: string[]
+          subcategory: string[]
+          verified: boolean
+        }
+        Insert: {
+          amount_far_eur?: number | null
+          amount_max_eur?: number | null
+          amount_text: string
+          amount_varies?: boolean
+          apply_url: string
+          category: string
+          colleges?: string[]
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          documents_needed?: string[]
+          how_to_apply_steps?: string[]
+          id: string
+          name: string
+          open_to_tags?: string[]
+          provider: string
+          requires_any_tags?: string[]
+          requires_tags?: string[]
+          subcategory?: string[]
+          verified?: boolean
+        }
+        Update: {
+          amount_far_eur?: number | null
+          amount_max_eur?: number | null
+          amount_text?: string
+          amount_varies?: boolean
+          apply_url?: string
+          category?: string
+          colleges?: string[]
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          documents_needed?: string[]
+          how_to_apply_steps?: string[]
+          id?: string
+          name?: string
+          open_to_tags?: string[]
+          provider?: string
+          requires_any_tags?: string[]
+          requires_tags?: string[]
+          subcategory?: string[]
+          verified?: boolean
+        }
+        Relationships: []
+      }
       grants: {
         Row: {
           amount_max_eur: number
@@ -123,15 +192,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_grants_grant_id_fkey"
-            columns: ["grant_id"]
-            isOneToOne: false
-            referencedRelation: "grants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
