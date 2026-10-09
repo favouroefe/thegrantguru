@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { WINS } from "@/lib/mock";
 import { GraduationCap, ShieldCheck, Sparkles, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -40,7 +42,18 @@ function Landing() {
               <Link to="/auth" search={{ mode: "login" }}>Log in</Link>
             </Button>
           </div>
-          <ul className="mt-10 grid gap-3 text-sm text-primary-foreground/80">
+          <div className="mt-10 rounded-3xl bg-primary-foreground/10 p-5">
+            <p className="font-display text-4xl font-extrabold text-accent"><FundingCounter /></p>
+            <p className="text-sm text-primary-foreground/80">in funding found for students</p>
+          </div>
+          <div className="mt-4 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
+            <div className="flex w-max animate-marquee gap-3">
+              {[...WINS, ...WINS].map((w, i) => (
+                <span key={i} className="whitespace-nowrap rounded-full bg-primary-foreground/10 px-4 py-2 text-sm">🎉 {w}</span>
+              ))}
+            </div>
+          </div>
+          <ul className="mt-8 grid gap-3 text-sm text-primary-foreground/80">
             <li className="flex items-center gap-3"><Clock className="h-4 w-4 text-accent" /> Takes about 5 minutes</li>
             <li className="flex items-center gap-3"><ShieldCheck className="h-4 w-4 text-accent" /> Your answers are only used to match grants</li>
           </ul>
@@ -48,4 +61,15 @@ function Landing() {
       </div>
     </div>
   );
+}
+
+function FundingCounter() {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const start = performance.now(); let raf = 0;
+    const tick = (t: number) => { const p = Math.min((t - start) / 1800, 1); setV(1.2 * (1 - Math.pow(1 - p, 3))); if (p < 1) raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return <>€{v.toFixed(1)}M</>;
 }
