@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Grant matching runs in server functions (src/lib/grants.functions.ts) via Lovable AI and only judges rows from the grants table — keeps AI from inventing schemes.
