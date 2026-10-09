@@ -48,8 +48,10 @@ export function GrantCard({ match, ug, highlight }: { match: Match; ug?: UserGra
     <div className={`rounded-3xl bg-card p-4 shadow-card transition ${highlight ? "ring-2 ring-accent" : ""}`}>
       <Link to="/grant/$id" params={{ id: f.id }} className="block">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-bold leading-snug">{f.name}</h3>
-          <p className="shrink-0 font-display text-lg font-bold text-primary">{amountLabel(match)}</p>
+          <h3 className="min-w-0 font-bold leading-snug">{f.name}</h3>
+          {(() => { const t = amountLabel(match); const long = t.length > 24; return (
+            <p title={long ? t : undefined} className="max-w-[45%] shrink-0 text-right font-display text-lg font-bold text-primary">{long ? "Amount varies" : t}</p>
+          ); })()}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <MatchLabel label={match.label} />
