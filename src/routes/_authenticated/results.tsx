@@ -122,7 +122,7 @@ function ResultsPage() {
         <p className="mt-2 text-sm text-primary-foreground/70">across {likely.length} likely scheme{likely.length === 1 ? "" : "s"} · per year where applicable</p>
       </div>
 
-      {profile?.answers && grants.length > 0 && <WhatIf grants={grants} answers={profile.answers} />
+      {profile?.answers && grants.length > 0 && <WhatIf grants={grants} answers={profile.answers} />}
 
       <Section title="Likely eligible" count={likely.length}>{list(likely)}</Section>
       <Section title="Worth checking" count={worth.length}>{list(worth)}</Section>
