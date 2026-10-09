@@ -18,10 +18,10 @@ export const SITUATIONS = [
 ];
 
 export interface Answers {
-  age?: string; college?: string; course?: string; year?: string; study?: string; level?: string; first_time?: string;
-  nationality?: string; fee_status?: string; residency_years?: string; county?: string; distance_km?: string;
-  lives_with_parents?: string; income_band?: string; dependants?: string; others_in_college?: string; social_welfare?: string;
-  situation?: string[]; notes?: string;
+  age?: string | undefined; college?: string | undefined; course?: string | undefined; year?: string | undefined; study?: string | undefined; level?: string | undefined; first_time?: string | undefined;
+  nationality?: string | undefined; fee_status?: string | undefined; residency_years?: string | undefined; county?: string | undefined; distance_km?: string | undefined;
+  lives_with_parents?: string | undefined; income_band?: string | undefined; dependants?: string | undefined; others_in_college?: string | undefined; social_welfare?: string | undefined;
+  situation?: string[] | undefined; notes?: string | undefined;
 }
 
 export function daysUntil(date: string | null) {

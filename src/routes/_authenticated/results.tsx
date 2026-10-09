@@ -6,6 +6,9 @@ import { z } from "zod";
 import { Check, ChevronDown, Globe, Loader2, School, ExternalLink, AlertTriangle } from "lucide-react";
 import { AppShell, Disclaimer } from "@/components/AppShell";
 import { GrantCard } from "@/components/GrantCard";
+import { WhatIf } from "@/components/WhatIf";
+import { ShareResults } from "@/components/ShareResults";
+import { profileQuery } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { grantsQuery, matchesQuery, userGrantsQuery, type Grant } from "@/lib/data";
@@ -64,6 +67,7 @@ function ResultsPage() {
   const { data: grants = [] } = useQuery(grantsQuery);
   const { data: matches, isLoading } = useQuery(matchesQuery);
   const { data: ugs = [] } = useQuery(userGrantsQuery);
+  const { data: profile } = useQuery(profileQuery);
   const [scanning, setScanning] = useState(!!scan);
   const [scanDone, setScanDone] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -117,7 +121,10 @@ function ResultsPage() {
         <p className="text-primary-foreground/80">You could be eligible for up to</p>
         <p className="mt-1 font-display text-5xl font-extrabold text-accent"><Counter value={total} /></p>
         <p className="mt-2 text-sm text-primary-foreground/70">across {likely.length} likely scheme{likely.length === 1 ? "" : "s"} · per year where applicable</p>
+        <ShareResults total={total} />
       </div>
+
+      {profile?.answers && grants.length > 0 && <WhatIf grants={grants} answers={profile.answers} />}
 
       <Section title="Likely eligible" count={likely.length}>{list(likely)}</Section>
       <Section title="Worth checking" count={worth.length}>{list(worth)}</Section>
