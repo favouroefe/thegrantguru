@@ -9,6 +9,7 @@ import { DeadlineBadge, markApplyClicked } from "@/components/GrantCard";
 import { userGrantsQuery, type Fund as Grant } from "@/lib/data";
 import { useMatches } from "@/hooks/use-matches";
 import { daysUntil } from "@/lib/options";
+import { AddToCalendar } from "@/components/AddToCalendar";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
   head: () => ({ meta: [{ title: "Deadline calendar — GrantGuru" }, { name: "description", content: "All your grant deadlines on one calendar." }, { property: "og:title", content: "Deadline calendar — GrantGuru" }, { property: "og:description", content: "Never miss a grant deadline." }] }),
@@ -50,11 +51,14 @@ function CalendarPage() {
 
   return (
     <AppShell>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-3xl font-extrabold">Calendar</h1>
-        <div className="flex rounded-xl bg-muted p-1">
-          <button onClick={() => setView("month")} aria-label="Month view" className={`rounded-lg p-2 ${view === "month" ? "bg-card shadow-card" : ""}`}><CalendarDays className="h-4 w-4" /></button>
-          <button onClick={() => setView("list")} aria-label="List view" className={`rounded-lg p-2 ${view === "list" ? "bg-card shadow-card" : ""}`}><List className="h-4 w-4" /></button>
+        <div className="flex items-center gap-2">
+          <AddToCalendar funds={dated.filter((g) => (daysUntil(g.deadline) ?? -1) >= 0)} label="Add all deadlines" />
+          <div className="flex rounded-xl bg-muted p-1">
+            <button onClick={() => setView("month")} aria-label="Month view" className={`rounded-lg p-2 ${view === "month" ? "bg-card shadow-card" : ""}`}><CalendarDays className="h-4 w-4" /></button>
+            <button onClick={() => setView("list")} aria-label="List view" className={`rounded-lg p-2 ${view === "list" ? "bg-card shadow-card" : ""}`}><List className="h-4 w-4" /></button>
+          </div>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -104,7 +108,7 @@ function CalendarPage() {
             {dayGrants.map((g) => (
               <div key={g.id} className="rounded-2xl bg-secondary p-4">
                 <p className="font-bold">{g.name}</p>
-                <div className="mt-1"><DeadlineBadge deadline={g.deadline} /></div>
+                <div className="mt-1 flex flex-wrap items-center justify-between gap-2"><DeadlineBadge deadline={g.deadline} /><AddToCalendar funds={[g]} /></div>
                 <div className="mt-3 flex gap-2">
                   <Button asChild variant="outline" className="flex-1 rounded-xl"><Link to="/grant/$id" params={{ id: g.id }}>View</Link></Button>
                   <Button asChild className="flex-1 rounded-xl"><a href={g.apply_url} target="_blank" rel="noreferrer" onClick={() => markApplyClicked(g.id)}>Apply <ExternalLink className="h-4 w-4" /></a></Button>
