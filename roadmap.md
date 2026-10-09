@@ -1,8 +1,8 @@
 # Roadmap
-- [ ] Ask GrantGuru chat (floating button, chips, sources, fallback)
-- [ ] What-if slider on results
-- [ ] Calendar tab (month/list, chips, day sheet, "Add to my calendar")
-- [ ] Notifications bell + settings page + email preview
-- [ ] GrantGuru Weekly newsletter page
-- [ ] Share card, Draft my application modal, document checklist progress
-- [ ] Landing page social proof (€1.2M counter + wins ticker)
+- [x] Ask GrantGuru chat (floating button, chips, sources, fallback)
+- [x] What-if slider on results
+- [x] Calendar tab (month/list, chips, day sheet, "Add to my calendar")
+- [x] Notifications bell + settings page + email preview
+- [x] GrantGuru Weekly newsletter page
+- [x] Share card, Draft my application modal, document checklist progress
+- [x] Landing page social proof (€1.2M counter + wins ticker)
